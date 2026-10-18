@@ -1,21 +1,20 @@
 
--- EMPIRE DES CLOWNS V2.3
--- Interface mobile avec chargement et mot de passe
+-- EMPIRE DES CLOWNS V2.4
+-- Interface mobile, chargement et mot de passe
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
-local player = Players.LocalPlayer
 
+local player = Players.LocalPlayer
 if not player then return end
 
 local playerGui = player:WaitForChild("PlayerGui")
-local previous = playerGui:FindFirstChild("EmpireDesClownsV2")
+local old = playerGui:FindFirstChild("EmpireDesClownsV2")
 
-if previous then
-    previous:Destroy()
+if old then
+    old:Destroy()
 end
 
--- Configuration
 local PASSWORD = "empire"
 local DISCORD = "https://discord.gg/KN4fUU252y"
 
@@ -30,39 +29,36 @@ local scripts = {
     }
 }
 
-local colors = {
-    bg = Color3.fromRGB(20, 19, 29),
-    panel = Color3.fromRGB(43, 40, 59),
-    purple = Color3.fromRGB(109, 68, 164),
-    white = Color3.fromRGB(245, 240, 255),
-    muted = Color3.fromRGB(180, 171, 195),
-    red = Color3.fromRGB(255, 100, 115)
-}
+local bg = Color3.fromRGB(20, 19, 29)
+local panel = Color3.fromRGB(43, 40, 59)
+local purple = Color3.fromRGB(109, 68, 164)
+local white = Color3.fromRGB(245, 240, 255)
+local muted = Color3.fromRGB(180, 171, 195)
 
-local function create(className, properties, parent)
-    local object = Instance.new(className)
+local function new(class, properties, parent)
+    local obj = Instance.new(class)
 
-    for property, value in pairs(properties) do
-        object[property] = value
+    for key, value in pairs(properties) do
+        obj[key] = value
     end
 
-    object.Parent = parent
-    return object
+    obj.Parent = parent
+    return obj
 end
 
-local function round(object, radius)
-    create("UICorner", {
+local function round(obj, radius)
+    new("UICorner", {
         CornerRadius = UDim.new(0, radius or 9)
-    }, object)
+    }, obj)
 end
 
-local function label(parent, caption, position, size, fontSize)
-    return create("TextLabel", {
-        Position = position,
+local function label(parent, value, pos, size, fontSize)
+    return new("TextLabel", {
+        Position = pos,
         Size = size,
-        Text = caption,
+        Text = value,
         BackgroundTransparency = 1,
-        TextColor3 = colors.white,
+        TextColor3 = white,
         Font = Enum.Font.Gotham,
         TextSize = fontSize or 12,
         TextWrapped = true,
@@ -70,35 +66,35 @@ local function label(parent, caption, position, size, fontSize)
     }, parent)
 end
 
-local function button(parent, caption, position, size, callback, highlighted)
-    local object = create("TextButton", {
-        Position = position,
+local function button(parent, value, pos, size, action, bright)
+    local btn = new("TextButton", {
+        Position = pos,
         Size = size,
-        Text = caption,
+        Text = value,
         Font = Enum.Font.GothamSemibold,
         TextSize = 12,
-        TextColor3 = colors.white,
-        BackgroundColor3 = highlighted and colors.purple or colors.panel,
+        TextColor3 = white,
+        BackgroundColor3 = bright and purple or panel,
         BorderSizePixel = 0,
         AutoButtonColor = true
     }, parent)
 
-    round(object, 9)
-    object.MouseButton1Click:Connect(callback)
+    round(btn)
 
-    return object
+    btn.MouseButton1Click:Connect(action)
+
+    return btn
 end
 
-local gui = create("ScreenGui", {
+local gui = new("ScreenGui", {
     Name = "EmpireDesClownsV2",
     ResetOnSpawn = false,
-    IgnoreGuiInset = true,
-    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    IgnoreGuiInset = true
 }, playerGui)
 
--- Adaptation aux telephones
 local camera = workspace.CurrentCamera
-local viewport = camera and camera.ViewportSize or Vector2.new(400, 700)
+local viewport = camera and camera.ViewportSize
+    or Vector2.new(400, 700)
 
 local scale = math.min(
     1,
@@ -108,24 +104,17 @@ local scale = math.min(
 
 scale = math.max(0.4, scale)
 
-local function centerFrame(size, visible)
-    local frame = create("Frame", {
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.fromScale(0.5, 0.5),
-        Size = size,
-        BackgroundColor3 = colors.bg,
-        BorderSizePixel = 0,
-        Visible = visible ~= false
-    }, gui)
+-- Animation centree
+local loading = new("Frame", {
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.fromScale(0.5, 0.5),
+    Size = UDim2.fromOffset(260, 125),
+    BackgroundColor3 = bg,
+    BorderSizePixel = 0
+}, gui)
 
-    round(frame, 12)
-    create("UIScale", {Scale = scale}, frame)
-
-    return frame
-end
-
--- Animation de chargement
-local loading = centerFrame(UDim2.fromOffset(260, 125))
+round(loading, 12)
+new("UIScale", {Scale = scale}, loading)
 
 local heading = label(
     loading,
@@ -145,20 +134,20 @@ local info = label(
     11
 )
 
-info.TextColor3 = colors.muted
+info.TextColor3 = muted
 
-local track = create("Frame", {
+local track = new("Frame", {
     Position = UDim2.fromOffset(20, 77),
     Size = UDim2.fromOffset(220, 8),
-    BackgroundColor3 = colors.panel,
+    BackgroundColor3 = panel,
     BorderSizePixel = 0
 }, loading)
 
 round(track, 8)
 
-local fill = create("Frame", {
+local fill = new("Frame", {
     Size = UDim2.fromScale(0, 1),
-    BackgroundColor3 = colors.purple,
+    BackgroundColor3 = purple,
     BorderSizePixel = 0
 }, track)
 
@@ -173,19 +162,21 @@ local percent = label(
 )
 
 local duration = 1.8
-local startTime = os.clock()
+local started = os.clock()
 
-local progressTween = TweenService:Create(
+local animation = TweenService:Create(
     fill,
     TweenInfo.new(duration, Enum.EasingStyle.Linear),
     {Size = UDim2.fromScale(1, 1)}
 )
 
-progressTween:Play()
+animation:Play()
 
 while gui.Parent do
-    local elapsed = os.clock() - startTime
-    local progress = math.clamp(elapsed / duration, 0, 1)
+    local progress = math.min(
+        1,
+        (os.clock() - started) / duration
+    )
 
     percent.Text = math.floor(progress * 100) .. "%"
 
@@ -198,7 +189,7 @@ end
 
 if not gui.Parent then return end
 
-progressTween:Cancel()
+animation:Cancel()
 fill.Size = UDim2.fromScale(1, 1)
 percent.Text = "100%"
 info.Text = "Termine !"
@@ -206,8 +197,17 @@ info.Text = "Termine !"
 task.wait(0.15)
 loading:Destroy()
 
--- Connexion par mot de passe
-local login = centerFrame(UDim2.fromOffset(300, 238))
+-- Connexion
+local login = new("Frame", {
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.fromScale(0.5, 0.5),
+    Size = UDim2.fromOffset(300, 238),
+    BackgroundColor3 = bg,
+    BorderSizePixel = 0
+}, gui)
+
+round(login, 12)
+new("UIScale", {Scale = scale}, login)
 
 local loginHeading = label(
     login,
@@ -227,20 +227,20 @@ label(
     12
 )
 
-local passwordInput = create("TextBox", {
+local field = new("TextBox", {
     Position = UDim2.fromOffset(30, 88),
     Size = UDim2.fromOffset(240, 37),
     Text = "",
     PlaceholderText = "Mot de passe",
     ClearTextOnFocus = false,
-    TextColor3 = colors.white,
-    PlaceholderColor3 = colors.muted,
+    TextColor3 = white,
+    PlaceholderColor3 = muted,
     Font = Enum.Font.Gotham,
     TextSize = 13,
-    BackgroundColor3 = colors.panel
+    BackgroundColor3 = panel
 }, login)
 
-round(passwordInput)
+round(field)
 
 local feedback = label(
     login,
@@ -251,10 +251,19 @@ local feedback = label(
 )
 
 -- Menu principal
-local main = centerFrame(UDim2.fromOffset(360, 346), false)
+local main = new("Frame", {
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.fromScale(0.5, 0.5),
+    Size = UDim2.fromOffset(360, 346),
+    BackgroundColor3 = bg,
+    BorderSizePixel = 0,
+    Active = true,
+    Draggable = true,
+    Visible = false
+}, gui)
 
-main.Active = true
-main.Draggable = true
+round(main, 12)
+new("UIScale", {Scale = scale}, main)
 
 local title = label(
     main,
@@ -267,42 +276,32 @@ local title = label(
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 
-local tabs = create("Frame", {
+local tabs = new("Frame", {
     Position = UDim2.fromOffset(10, 58),
     Size = UDim2.new(1, -20, 0, 40),
     BackgroundTransparency = 1
 }, main)
 
-local body = create("Frame", {
+local body = new("Frame", {
     Position = UDim2.fromOffset(12, 106),
     Size = UDim2.new(1, -24, 1, -115),
     BackgroundTransparency = 1
 }, main)
 
-local function bodyLabel(caption, y, height)
-    local object = label(
+local function bodyLabel(value, y, height)
+    local obj = label(
         body,
-        caption,
+        value,
         UDim2.fromOffset(5, y),
         UDim2.new(1, -10, 0, height or 35),
         12
     )
 
-    object.TextXAlignment = Enum.TextXAlignment.Left
-    return object
+    obj.TextXAlignment = Enum.TextXAlignment.Left
+    return obj
 end
 
 local status
-local busy = false
-
--- Les scripts tiers ne sont pas executes dans cette version.
-local function execute(entry)
-    if busy then return end
-
-    if status and status.Parent then
-        status.Text = entry.name .. " : execution externe non activee."
-    end
-end
 
 local function show(page)
     for _, child in ipairs(body:GetChildren()) do
@@ -325,7 +324,10 @@ local function show(page)
                 UDim2.new(1, -110, 0, y),
                 UDim2.fromOffset(105, 36),
                 function()
-                    execute(entry)
+                    if status and status.Parent then
+                        status.Text = entry.name ..
+                            " : chargement externe desactive."
+                    end
                 end,
                 true
             )
@@ -345,11 +347,7 @@ local function show(page)
         )
 
     elseif page == "VOC" then
-        bodyLabel(
-            "Parametres vocaux a venir.",
-            8,
-            70
-        )
+        bodyLabel("Parametres vocaux a venir.", 8, 70)
 
     elseif page == "Discord" then
         bodyLabel("Notre Discord :", 8, 30)
@@ -365,7 +363,7 @@ local function show(page)
                     setclipboard(DISCORD)
                     bodyLabel("Lien copie !", 145, 30)
                 else
-                    bodyLabel(DISCORD, 145, 45)
+                    bodyLabel(DISCORD, 145, 40)
                 end
             end,
             true
@@ -401,7 +399,6 @@ minimize = button(
     UDim2.fromOffset(28, 28),
     function()
         minimized = not minimized
-
         tabs.Visible = not minimized
         body.Visible = not minimized
 
@@ -428,12 +425,12 @@ show("Scripts")
 
 -- Verification du mot de passe
 local function unlock()
-    if passwordInput.Text == PASSWORD then
+    if field.Text == PASSWORD then
         login:Destroy()
         main.Visible = true
     else
         feedback.Text = "Mot de passe incorrect."
-        feedback.TextColor3 = colors.red
+        feedback.TextColor3 = Color3.fromRGB(255, 100, 115)
     end
 end
 
@@ -446,7 +443,7 @@ button(
     true
 )
 
-passwordInput.FocusLost:Connect(function(enterPressed)
+field.FocusLost:Connect(function(enterPressed)
     if enterPressed then
         unlock()
     end
