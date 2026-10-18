@@ -1,3 +1,4 @@
+
 -- EMPIRE DES CLOWNS V2 - Menu communautaire
 -- Les scripts tiers viennent d'Internet et peuvent changer.
 
@@ -17,6 +18,18 @@ local sources = {
 
 local discord = 'https://discord.gg/KN4fUU252y'
 local password = 'empire'
+
+-- Sauvegarde de l'accès après la première validation
+local saveFile = 'EmpireDesClowns_Access.txt'
+local savedAccess = false
+
+if type(isfile) == 'function'
+    and type(readfile) == 'function' then
+    local ok, result = pcall(function()
+        return isfile(saveFile) and readfile(saveFile) == 'unlocked'
+    end)
+    savedAccess = ok and result
+end
 
 local function new(class, props, parentObj)
     local obj = Instance.new(class)
@@ -385,6 +398,14 @@ local function verify()
 
     if passwordInput.Text == password then
         unlocked = true
+
+        -- Conserve l'accès pour les prochaines utilisations.
+        if type(writefile) == 'function' then
+            pcall(function()
+                writefile(saveFile, 'unlocked')
+            end)
+        end
+
         gate:Destroy()
         main.Visible = true
     else
@@ -410,7 +431,7 @@ passwordInput.FocusLost:Connect(function(enterPressed)
     end
 end)
 
--- Animation de 0 à 100 % en exactement 5 secondes
+-- Animation de 0 à 100 % en 5 secondes
 task.spawn(function()
     local startTime = os.clock()
 
@@ -438,6 +459,13 @@ task.spawn(function()
     task.wait(.3)
 
     if not gate.Parent then return end
+
+    -- Après la première validation, ouvre directement le menu.
+    if savedAccess then
+        gate:Destroy()
+        main.Visible = true
+        return
+    end
 
     loadingText.Visible = false
     barBackground.Visible = false
