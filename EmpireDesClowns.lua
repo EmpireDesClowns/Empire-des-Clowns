@@ -1,465 +1,280 @@
 
--- EMPIRE DES CLOWNS V2.4
--- Interface mobile, chargement et mot de passe
-
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-
+-- EMPIRE DES CLOWNS V2 - Menu communautaire
+-- Attention : les scripts tiers sont chargés depuis Internet et peuvent changer.
+local Players = game:GetService('Players')
+local TweenService = game:GetService('TweenService')
 local player = Players.LocalPlayer
 if not player then return end
+local parent = player:WaitForChild('PlayerGui')
+local old = parent:FindFirstChild('EmpireDesClownsV2')
+if old then old:Destroy() end
 
-local playerGui = player:WaitForChild("PlayerGui")
-local old = playerGui:FindFirstChild("EmpireDesClownsV2")
-
-if old then
-    old:Destroy()
-end
-
-local PASSWORD = "empire"
-local DISCORD = "https://discord.gg/KN4fUU252y"
-
-local scripts = {
-    {
-        name = "Beanz Main.lua",
-        url = "https://beanzz.wtf/Main.lua"
-    },
-    {
-        name = "Vortex",
-        url = "https://api.getvortex.vip/scripts/VortexMain"
-    }
+local sources = {
+    {name = 'Beanz', url = 'https://beanzz.wtf/Main.lua'},
+    {name = 'Beanz AutoRob', url = 'https://beanzz.wtf/Autorob.lua'},
+    {name = 'Vortex', url = 'https://api.getvortex.vip/scripts/VortexMain'},
 }
-
-local bg = Color3.fromRGB(20, 19, 29)
-local panel = Color3.fromRGB(43, 40, 59)
-local purple = Color3.fromRGB(109, 68, 164)
-local white = Color3.fromRGB(245, 240, 255)
-local muted = Color3.fromRGB(180, 171, 195)
-
-local function new(class, properties, parent)
+local discord = 'https://discord.gg/KN4fUU252y'
+local function new(class, props, parentObj)
     local obj = Instance.new(class)
-
-    for key, value in pairs(properties) do
-        obj[key] = value
-    end
-
-    obj.Parent = parent
+    for k, v in pairs(props) do obj[k] = v end
+    obj.Parent = parentObj
     return obj
 end
-
-local function round(obj, radius)
-    new("UICorner", {
-        CornerRadius = UDim.new(0, radius or 9)
-    }, obj)
+local function round(obj)
+    new('UICorner', {CornerRadius = UDim.new(0, 9)}, obj)
 end
+local ui = new('ScreenGui', {
+    Name = 'EmpireDesClownsV2',
+    ResetOnSpawn = false
+}, parent)
 
-local function label(parent, value, pos, size, fontSize)
-    return new("TextLabel", {
-        Position = pos,
-        Size = size,
-        Text = value,
-        BackgroundTransparency = 1,
-        TextColor3 = white,
-        Font = Enum.Font.Gotham,
-        TextSize = fontSize or 12,
-        TextWrapped = true,
-        TextXAlignment = Enum.TextXAlignment.Center
-    }, parent)
-end
-
-local function button(parent, value, pos, size, action, bright)
-    local btn = new("TextButton", {
-        Position = pos,
-        Size = size,
-        Text = value,
-        Font = Enum.Font.GothamSemibold,
-        TextSize = 12,
-        TextColor3 = white,
-        BackgroundColor3 = bright and purple or panel,
-        BorderSizePixel = 0,
-        AutoButtonColor = true
-    }, parent)
-
-    round(btn)
-
-    btn.MouseButton1Click:Connect(action)
-
-    return btn
-end
-
-local gui = new("ScreenGui", {
-    Name = "EmpireDesClownsV2",
-    ResetOnSpawn = false,
-    IgnoreGuiInset = true
-}, playerGui)
-
-local camera = workspace.CurrentCamera
-local viewport = camera and camera.ViewportSize
-    or Vector2.new(400, 700)
-
-local scale = math.min(
-    1,
-    (viewport.X - 24) / 360,
-    (viewport.Y - 32) / 346
-)
-
-scale = math.max(0.4, scale)
-
--- Animation centree
-local loading = new("Frame", {
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    Position = UDim2.fromScale(0.5, 0.5),
-    Size = UDim2.fromOffset(260, 125),
-    BackgroundColor3 = bg,
-    BorderSizePixel = 0
-}, gui)
-
-round(loading, 12)
-new("UIScale", {Scale = scale}, loading)
-
-local heading = label(
-    loading,
-    "EMPIRE DES CLOWNS",
-    UDim2.fromOffset(10, 12),
-    UDim2.fromOffset(240, 30),
-    15
-)
-
-heading.Font = Enum.Font.GothamBold
-
-local info = label(
-    loading,
-    "Initialisation...",
-    UDim2.fromOffset(10, 45),
-    UDim2.fromOffset(240, 20),
-    11
-)
-
-info.TextColor3 = muted
-
-local track = new("Frame", {
-    Position = UDim2.fromOffset(20, 77),
-    Size = UDim2.fromOffset(220, 8),
-    BackgroundColor3 = panel,
-    BorderSizePixel = 0
-}, loading)
-
-round(track, 8)
-
-local fill = new("Frame", {
-    Size = UDim2.fromScale(0, 1),
-    BackgroundColor3 = purple,
-    BorderSizePixel = 0
-}, track)
-
-round(fill, 8)
-
-local percent = label(
-    loading,
-    "0%",
-    UDim2.fromOffset(10, 93),
-    UDim2.fromOffset(240, 20),
-    11
-)
-
-local duration = 1.8
-local started = os.clock()
-
-local animation = TweenService:Create(
-    fill,
-    TweenInfo.new(duration, Enum.EasingStyle.Linear),
-    {Size = UDim2.fromScale(1, 1)}
-)
-
-animation:Play()
-
-while gui.Parent do
-    local progress = math.min(
-        1,
-        (os.clock() - started) / duration
-    )
-
-    percent.Text = math.floor(progress * 100) .. "%"
-
-    if progress >= 1 then
-        break
-    end
-
-    task.wait(0.03)
-end
-
-if not gui.Parent then return end
-
-animation:Cancel()
-fill.Size = UDim2.fromScale(1, 1)
-percent.Text = "100%"
-info.Text = "Termine !"
-
-task.wait(0.15)
-loading:Destroy()
-
--- Connexion
-local login = new("Frame", {
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    Position = UDim2.fromScale(0.5, 0.5),
-    Size = UDim2.fromOffset(300, 238),
-    BackgroundColor3 = bg,
-    BorderSizePixel = 0
-}, gui)
-
-round(login, 12)
-new("UIScale", {Scale = scale}, login)
-
-local loginHeading = label(
-    login,
-    "EMPIRE DES CLOWNS",
-    UDim2.fromOffset(10, 14),
-    UDim2.fromOffset(280, 32),
-    17
-)
-
-loginHeading.Font = Enum.Font.GothamBold
-
-label(
-    login,
-    "Mot de passe disponible sur Discord",
-    UDim2.fromOffset(10, 52),
-    UDim2.fromOffset(280, 25),
-    12
-)
-
-local field = new("TextBox", {
-    Position = UDim2.fromOffset(30, 88),
-    Size = UDim2.fromOffset(240, 37),
-    Text = "",
-    PlaceholderText = "Mot de passe",
-    ClearTextOnFocus = false,
-    TextColor3 = white,
-    PlaceholderColor3 = muted,
-    Font = Enum.Font.Gotham,
-    TextSize = 13,
-    BackgroundColor3 = panel
-}, login)
-
-round(field)
-
-local feedback = label(
-    login,
-    "",
-    UDim2.fromOffset(15, 175),
-    UDim2.fromOffset(270, 27),
-    11
-)
-
--- Menu principal
-local main = new("Frame", {
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    Position = UDim2.fromScale(0.5, 0.5),
+local main = new('Frame', {
     Size = UDim2.fromOffset(360, 346),
-    BackgroundColor3 = bg,
+    Position = UDim2.new(.5, -180, .5, -173),
+    BackgroundColor3 = Color3.fromRGB(20, 19, 29),
     BorderSizePixel = 0,
     Active = true,
     Draggable = true,
     Visible = false
-}, gui)
+}, ui)
+round(main)
 
-round(main, 12)
-new("UIScale", {Scale = scale}, main)
+local title = new('TextLabel', {
+    Size = UDim2.new(1, -90, 0, 52),
+    Position = UDim2.fromOffset(15, 0),
+    Text = 'EMPIRE DES CLOWNS',
+    BackgroundTransparency = 1,
+    TextColor3 = Color3.fromRGB(245, 240, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 16,
+    TextXAlignment = Enum.TextXAlignment.Left
+}, main)
 
-local title = label(
-    main,
-    "EMPIRE DES CLOWNS",
-    UDim2.fromOffset(15, 8),
-    UDim2.fromOffset(250, 38),
-    16
-)
+local function makeButton(parentObj, text, position, size, callback, purple)
+    local b = new('TextButton', {
+        Text = text,
+        Position = position,
+        Size = size,
+        BorderSizePixel = 0,
+        TextColor3 = Color3.fromRGB(245, 240, 255),
+        TextSize = 12,
+        Font = Enum.Font.GothamSemibold,
+        BackgroundColor3 = purple and Color3.fromRGB(109, 68, 164) or Color3.fromRGB(43, 40, 59)
+    }, parentObj)
+    round(b)
+    b.MouseButton1Click:Connect(callback)
+    return b
+end
 
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-
-local tabs = new("Frame", {
+local tabs = new('Frame', {
     Position = UDim2.fromOffset(10, 58),
     Size = UDim2.new(1, -20, 0, 40),
     BackgroundTransparency = 1
 }, main)
 
-local body = new("Frame", {
+local body = new('Frame', {
     Position = UDim2.fromOffset(12, 106),
     Size = UDim2.new(1, -24, 1, -115),
     BackgroundTransparency = 1
 }, main)
 
-local function bodyLabel(value, y, height)
-    local obj = label(
-        body,
-        value,
-        UDim2.fromOffset(5, y),
-        UDim2.new(1, -10, 0, height or 35),
-        12
-    )
-
-    obj.TextXAlignment = Enum.TextXAlignment.Left
-    return obj
+local function label(msg, posY, height)
+    return new('TextLabel', {
+        Text = msg,
+        Position = UDim2.fromOffset(5, posY),
+        Size = UDim2.new(1, -10, 0, height or 35),
+        BackgroundTransparency = 1,
+        TextColor3 = Color3.fromRGB(230, 224, 245),
+        Font = Enum.Font.Gotham,
+        TextSize = 12,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left
+    }, body)
 end
 
-local status
+local statusLabel
+local busy = false
+local function execute(entry)
+    if busy then return end
+    busy = true
+    statusLabel.Text = 'Chargement de ' .. entry.name .. '...'
+    task.spawn(function()
+        local ok, err = pcall(function()
+            local code = game:HttpGet(entry.url)
+            local f, parseErr = loadstring(code)
+            if not f then error(parseErr or 'Impossible de compiler le script') end
+            f()
+        end)
+        if statusLabel and statusLabel.Parent then
+            statusLabel.Text = ok and (entry.name .. ' : lancement demandé.') or ('Erreur : ' .. tostring(err):sub(1, 85))
+        end
+        busy = false
+    end)
+end
 
 local function show(page)
-    for _, child in ipairs(body:GetChildren()) do
-        child:Destroy()
-    end
-
-    status = nil
-
-    if page == "Scripts" then
-        bodyLabel("SCRIPTS DISPONIBLES", 0)
-
-        for i, entry in ipairs(scripts) do
-            local y = 43 + (i - 1) * 58
-
-            bodyLabel(entry.name, y)
-
-            button(
-                body,
-                "EXECUTER",
-                UDim2.new(1, -110, 0, y),
-                UDim2.fromOffset(105, 36),
-                function()
-                    if status and status.Parent then
-                        status.Text = entry.name ..
-                            " : chargement externe desactive."
-                    end
-                end,
-                true
-            )
+    for _, child in ipairs(body:GetChildren()) do child:Destroy() end
+    if page == 'Scripts' then
+        label('SCRIPTS DISPONIBLES', 0)
+        for i, entry in ipairs(sources) do
+            local y = 37 + (i - 1) * 52
+            label(entry.name, y)
+            makeButton(body, 'EXÉCUTER', UDim2.new(1, -110, 0, y), UDim2.fromOffset(105, 35), function()
+                execute(entry)
+            end, true)
         end
-
-        status = bodyLabel(
-            "Scripts externes non verifies.",
-            171,
-            48
-        )
-
-    elseif page == "Anti-Ban" then
-        bodyLabel(
-            "Aucun anti-ban ne garantit une protection contre les bannissements.",
-            8,
-            70
-        )
-
-    elseif page == "VOC" then
-        bodyLabel("Parametres vocaux a venir.", 8, 70)
-
-    elseif page == "Discord" then
-        bodyLabel("Notre Discord :", 8, 30)
-        bodyLabel(DISCORD, 42, 40)
-
-        button(
-            body,
-            "COPIER DISCORD",
-            UDim2.fromOffset(5, 95),
-            UDim2.fromOffset(175, 40),
-            function()
-                if type(setclipboard) == "function" then
-                    setclipboard(DISCORD)
-                    bodyLabel("Lien copie !", 145, 30)
-                else
-                    bodyLabel(DISCORD, 145, 40)
-                end
-            end,
-            true
-        )
+        statusLabel = label('Les scripts externes ne sont pas vérifiés ici.', 195, 45)
+    elseif page == 'Anti-Ban' then
+        label('Aucun script ne garantit une protection contre les bannissements.', 6, 65)
+    elseif page == 'VOC' then
+        label('Espace des réglages vocaux à venir.', 6, 65)
+    else
+        label('Notre Discord : ' .. discord, 6, 60)
+        makeButton(body, 'COPIER LE DISCORD', UDim2.fromOffset(5, 72), UDim2.fromOffset(175, 40), function()
+            if type(setclipboard) == 'function' then
+                setclipboard(discord)
+                label('Lien copié.', 120)
+            else
+                label('Copie le lien affiché ci-dessus.', 120)
+            end
+        end, true)
     end
 end
 
-for i, name in ipairs({
-    "Scripts",
-    "Anti-Ban",
-    "VOC",
-    "Discord"
-}) do
-    button(
-        tabs,
-        name,
-        UDim2.new((i - 1) / 4, 1, 0, 0),
-        UDim2.new(0.25, -4, 0, 36),
-        function()
-            show(name)
-        end
-    )
+for i, name in ipairs({'Scripts', 'Anti-Ban', 'VOC', 'Discord'}) do
+    makeButton(tabs, name, UDim2.new((i - 1) / 4, 1, 0, 0), UDim2.new(.25, -4, 0, 36), function()
+        show(name)
+    end)
 end
 
--- Reduire et fermer
 local minimized = false
 local minimize
+minimize = makeButton(main, '−', UDim2.new(1, -75, 0, 11), UDim2.fromOffset(28, 28), function()
+    minimized = not minimized
+    tabs.Visible = not minimized
+    body.Visible = not minimized
+    main.Size = UDim2.fromOffset(360, minimized and 52 or 346)
+    minimize.Text = minimized and '+' or '−'
+end)
+makeButton(main, 'X', UDim2.new(1, -40, 0, 11), UDim2.fromOffset(28, 28), function()
+    ui:Destroy()
+end)
+show('Scripts')
 
-minimize = button(
-    main,
-    "-",
-    UDim2.new(1, -75, 0, 11),
-    UDim2.fromOffset(28, 28),
-    function()
-        minimized = not minimized
-        tabs.Visible = not minimized
-        body.Visible = not minimized
+-- Animation et accès au menu
+local gate = new('Frame', {
+    Size = UDim2.fromOffset(350, 230),
+    Position = UDim2.new(.5, -175, .5, -115),
+    BackgroundColor3 = Color3.fromRGB(20, 19, 29),
+    BorderSizePixel = 0
+}, ui)
+round(gate)
 
-        main.Size = UDim2.fromOffset(
-            360,
-            minimized and 52 or 346
-        )
+new('TextLabel', {
+    Text = 'EMPIRE DES CLOWNS',
+    Size = UDim2.new(1, -20, 0, 50),
+    Position = UDim2.fromOffset(10, 12),
+    BackgroundTransparency = 1,
+    TextColor3 = Color3.fromRGB(245, 240, 255),
+    Font = Enum.Font.GothamBold,
+    TextSize = 19
+}, gate)
 
-        minimize.Text = minimized and "+" or "-"
-    end
-)
+local loadingText = new('TextLabel', {
+    Text = 'CHARGEMENT... 0%',
+    Size = UDim2.new(1, -30, 0, 35),
+    Position = UDim2.fromOffset(15, 75),
+    BackgroundTransparency = 1,
+    TextColor3 = Color3.fromRGB(230, 224, 245),
+    Font = Enum.Font.GothamSemibold,
+    TextSize = 14
+}, gate)
 
-button(
-    main,
-    "X",
-    UDim2.new(1, -40, 0, 11),
-    UDim2.fromOffset(28, 28),
-    function()
-        gui:Destroy()
-    end
-)
+local barBackground = new('Frame', {
+    Size = UDim2.new(1, -40, 0, 17),
+    Position = UDim2.fromOffset(20, 125),
+    BackgroundColor3 = Color3.fromRGB(43, 40, 59),
+    BorderSizePixel = 0
+}, gate)
+round(barBackground)
 
-show("Scripts")
+local progress = new('Frame', {
+    Size = UDim2.fromScale(0, 1),
+    BackgroundColor3 = Color3.fromRGB(109, 68, 164),
+    BorderSizePixel = 0
+}, barBackground)
+round(progress)
 
--- Verification du mot de passe
-local function unlock()
-    if field.Text == PASSWORD then
-        login:Destroy()
+local passwordInput = new('TextBox', {
+    Size = UDim2.new(1, -40, 0, 40),
+    Position = UDim2.fromOffset(20, 90),
+    BackgroundColor3 = Color3.fromRGB(43, 40, 59),
+    TextColor3 = Color3.fromRGB(245, 240, 255),
+    PlaceholderText = 'Mot de passe...',
+    PlaceholderColor3 = Color3.fromRGB(165, 155, 185),
+    Text = '',
+    TextSize = 14,
+    Font = Enum.Font.Gotham,
+    ClearTextOnFocus = false,
+    Visible = false
+}, gate)
+round(passwordInput)
+
+local errorText = new('TextLabel', {
+    Text = '',
+    Size = UDim2.new(1, -30, 0, 25),
+    Position = UDim2.fromOffset(15, 183),
+    BackgroundTransparency = 1,
+    TextColor3 = Color3.fromRGB(255, 100, 115),
+    Font = Enum.Font.Gotham,
+    TextSize = 12,
+    Visible = false
+}, gate)
+
+local unlocked = false
+local function verify()
+    if unlocked then return end
+    if passwordInput.Text == 'empire' then
+        unlocked = true
+        gate:Destroy()
         main.Visible = true
     else
-        feedback.Text = "Mot de passe incorrect."
-        feedback.TextColor3 = Color3.fromRGB(255, 100, 115)
+        errorText.Text = 'Mot de passe incorrect !'
+        errorText.Visible = true
+        passwordInput.Text = ''
     end
 end
 
-button(
-    login,
-    "ACCEDER AU MENU",
-    UDim2.fromOffset(30, 135),
-    UDim2.fromOffset(240, 36),
-    unlock,
+local accessButton = makeButton(
+    gate,
+    'ACCÉDER AU MENU',
+    UDim2.fromOffset(70, 143),
+    UDim2.fromOffset(210, 36),
+    verify,
     true
 )
+accessButton.Visible = false
 
-field.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        unlock()
-    end
+passwordInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then verify() end
 end)
 
-button(
-    login,
-    "DISCORD",
-    UDim2.fromOffset(95, 207),
-    UDim2.fromOffset(110, 25),
-    function()
-        if type(setclipboard) == "function" then
-            setclipboard(DISCORD)
-            feedback.Text = "Lien Discord copie."
-        else
-            feedback.Text = DISCORD
-        end
+task.spawn(function()
+    local startTime = os.clock()
+    while gate.Parent do
+        local elapsed = os.clock() - startTime
+        local percent = math.clamp(elapsed / 5, 0, 1)
+        progress.Size = UDim2.fromScale(percent, 1)
+        loadingText.Text = 'CHARGEMENT... ' .. math.floor(percent * 100) .. '%'
+        if percent >= 1 then break end
+        task.wait()
     end
-)
+
+    if not gate.Parent then return end
+
+    loadingText.Text = 'ENTRE LE MOT DE PASSE'
+    barBackground.Visible = false
+    passwordInput.Visible = true
+    accessButton.Visible = true
+end)
